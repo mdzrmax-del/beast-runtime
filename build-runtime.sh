@@ -25,11 +25,14 @@ grep -E 'TERMUX_APP__PACKAGE_NAME=|TERMUX_APP_PACKAGE=' scripts/properties.sh
 
 IMAGE="${BUILDER_IMAGE:-ghcr.io/termux/package-builder:latest}"
 docker pull "$IMAGE"
+[ -e /dev/fuse ] || sudo modprobe fuse || true
+[ -e /dev/fuse ] || sudo mknod -m 666 /dev/fuse c 10 229
+sudo chmod 666 /dev/fuse
 chmod -R a+rwX "$WORK/tp"
 
 build() {
   say "Building: $*"
-  docker run --rm -e APP_PKG="$APP_PKG" -v "$WORK/tp:/home/builder/termux-packages" -w /home/builder/termux-packages "$IMAGE" \
+  docker run --rm --privileged --device /dev/fuse -e APP_PKG="$APP_PKG" -v "$WORK/tp:/home/builder/termux-packages" -w /home/builder/termux-packages "$IMAGE" \
     bash -c 'S=""; [ "$(id -u)" != 0 ] && S=sudo; $S mkdir -p "/data/data/$APP_PKG" && $S chown -R "$(id -u):$(id -g)" "/data/data/$APP_PKG" && ./build-package.sh -a aarch64 "$@"' _ "$@"
 }
 
