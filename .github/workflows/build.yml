@@ -1,0 +1,65 @@
+name: Build Beast runtime
+on:
+  workflow_dispatch:
+    inputs:
+      package_name:
+        description: App package name the runtime is built for
+        default: com.aiunify.assistant
+permissions:
+  contents: write
+env:
+  APP_PKG: ${{ inputs.package_name }}
+
+jobs:
+  base:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with: { android: true, dotnet: true, haskell: true, large-packages: false, tool-cache: false, swap-storage: true }
+      - run: ./build-runtime.sh base
+      - uses: actions/upload-artifact@v4
+        with: { name: base, path: out/*, retention-days: 7 }
+
+  jdk:
+    needs: base
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with: { android: true, dotnet: true, haskell: true, large-packages: false, tool-cache: false, swap-storage: true }
+      - uses: actions/download-artifact@v4
+        with: { name: base, path: in }
+      - run: ./build-runtime.sh jdk in/base-files.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: jdk, path: out/*, retention-days: 7 }
+
+  tools:
+    needs: base
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: base, path: in }
+      - run: ./build-runtime.sh tools in/base-files.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: tools, path: out/*, retention-days: 7 }
+
+  release:
+    needs: [base, jdk, tools]
+    if: ${{ always() && needs.base.result == 'success' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: dl, merge-multiple: true, pattern: '*' }
+      - run: ls -l dl && cd dl && sha256sum *.tar.gz | tee SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: runtime-${{ github.run_number }}
+          name: Beast runtime ${{ github.run_number }}
+          files: |
+            dl/*.tar.gz
+            dl/SHA256SUMS.txt
