@@ -47,6 +47,7 @@ resolve() {
 build() {
   say "Building: $*"
   set -- $(resolve "$@"); say "Resolved to: $*"
+  sed -i 's#https://downloads.apache.org/apr/#https://archive.apache.org/dist/apr/#' packages/apr-util/build.sh 2>/dev/null || true
   docker run --rm --privileged --device /dev/fuse -e APP_PKG="$APP_PKG" -v "$WORK/tp:/home/builder/termux-packages" -w /home/builder/termux-packages "$IMAGE" \
     bash -c 'S=""; [ "$(id -u)" != 0 ] && S=sudo; $S mkdir -p "/data/data/$APP_PKG" && $S chown -R "$(id -u):$(id -g)" "/data/data/$APP_PKG" && ./build-package.sh -a aarch64 "$@"' _ "$@"
 }
