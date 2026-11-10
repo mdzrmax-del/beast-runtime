@@ -33,8 +33,20 @@ sudo chmod 666 /dev/fuse
 sudo chmod 666 /dev/fuse
 chmod -R a+rwX "$WORK/tp"
 
+resolve() {
+  local p parent
+  for p in "$@"; do
+    if [ -d "packages/$p" ]; then echo "$p"
+    else
+      parent="$(ls packages/*/"$p".subpackage.sh 2>/dev/null | head -n1 | cut -d/ -f2)"
+      if [ -n "$parent" ]; then echo "$parent"; else echo "WARNING: no termux package named $p" >&2; fi
+    fi
+  done | awk '!seen[$0]++'
+}
+
 build() {
   say "Building: $*"
+  set -- $(resolve "$@"); say "Resolved to: $*"
   docker run --rm --privileged --device /dev/fuse -e APP_PKG="$APP_PKG" -v "$WORK/tp:/home/builder/termux-packages" -w /home/builder/termux-packages "$IMAGE" \
     bash -c 'S=""; [ "$(id -u)" != 0 ] && S=sudo; $S mkdir -p "/data/data/$APP_PKG" && $S chown -R "$(id -u):$(id -g)" "/data/data/$APP_PKG" && ./build-package.sh -a aarch64 "$@"' _ "$@"
 }
