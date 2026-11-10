@@ -74,7 +74,7 @@ base)
   tar -C "$U" -czf "$OUT/base.tar.gz" .
   ;;
 jdk)
-  build openjdk-17 gradle
+  build libsndfile openjdk-17 gradle
   G="$(ls output/gradle_*.deb | head -n1)"
   S="$WORK/stage-jdk"; stage "$S" $(ls output/*.deb | grep -v '/gradle_')
   only_new "$(usr_dir "$S")" "$OUT/jdk.tar.gz"
@@ -84,7 +84,7 @@ jdk)
 tools)
   AVAIL=(); for p in aapt aapt2 apksigner zipalign d8; do [ -d "packages/$p" ] && AVAIL+=("$p") || echo "no termux package named $p, skipped"; done
   [ "${#AVAIL[@]}" -gt 0 ] || fail "none of the Android tool packages exist in termux-packages"
-  build "${AVAIL[@]}"
+  build libsndfile "${AVAIL[@]}"
   S="$WORK/stage-tools"; stage "$S" output/*.deb
   only_new "$(usr_dir "$S")" "$OUT/tools.tar.gz"
 
