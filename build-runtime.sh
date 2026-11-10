@@ -28,6 +28,9 @@ docker pull "$IMAGE"
 [ -e /dev/fuse ] || sudo modprobe fuse || true
 [ -e /dev/fuse ] || sudo mknod -m 666 /dev/fuse c 10 229
 sudo chmod 666 /dev/fuse
+[ -e /dev/fuse ] || sudo modprobe fuse || true
+[ -e /dev/fuse ] || sudo mknod -m 666 /dev/fuse c 10 229
+sudo chmod 666 /dev/fuse
 chmod -R a+rwX "$WORK/tp"
 
 build() {
